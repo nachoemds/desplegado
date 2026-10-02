@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Autoridades</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* ====== TAMAÑO ======
+   Todo el diseño está en "em"; la hoja mide 100em de ancho.
+   A4 y A3 solo cambian el font-size => escala vectorial, sin deformar.
+   Para A3: <body class="a3"> */
+:root{
+  --azul:#0b5ea8; --azul2:#0a7ec2; --card:#d3e3f4; --gris:#e1e1e1; --txt:#222;
+  --W:210mm;
+}
+body.a3{ --W:297mm; }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#888}
+body{font-family:"Montserrat","Helvetica Neue",Arial,sans-serif;color:var(--txt)}
+.page{
+  width:var(--W); aspect-ratio:210/297; margin:0 auto; background:#fff;
+  font-size:calc(var(--W)/100); position:relative; overflow:hidden;
+}
+/* encabezado */
+.head{background:var(--azul);height:9.5em;display:flex;align-items:center;justify-content:space-between;padding:0 4em}
+.head .logo{width:6.6em;height:3.6em;border-radius:3.3em 3.3em 0 0;border:.25em dotted #fff;border-bottom:0;opacity:.8}
+.head h1{color:#fff;font-size:3.1em;font-weight:800;letter-spacing:.06em}
+/* autoridades */
+.auth{background:var(--gris);height:24.2em;padding:1em 4em;display:flex;flex-direction:column;justify-content:space-between}
+.auth .row{display:flex;justify-content:space-between;align-items:center}
+.auth .row.c{justify-content:center}
+.auth .p{display:flex;align-items:center;gap:.9em}
+.auth .p .ph{width:7em;height:7em}
+.auth .p.big .ph{width:8em;height:8em}
+.auth .t{line-height:1.15;max-width:13em}
+.auth .n{color:var(--azul2);font-weight:700;font-size:1.05em}
+.auth .n b{font-weight:800}
+.auth .r{font-size:.62em;color:#777;text-transform:uppercase;margin-top:.15em}
+/* foto circular (con silueta si falta la imagen) */
+.ph{border-radius:50%;overflow:hidden;background:#c9c9c9 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='38' r='17' fill='%23555'/><path d='M14 100c0-28 16-40 36-40s36 12 36 40z' fill='%23555'/></svg>") center/cover;
+  border:.15em solid #fff;box-shadow:0 0 .3em rgba(0,0,0,.25);flex:none}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+/* grilla de provincias */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7em 4.4em;padding:0 4em;margin-top:2.1em}
+.prov .tit{background:var(--azul);color:#fff;font-weight:800;font-size:.78em;text-transform:uppercase;padding:.15em 1em;border-radius:1em;height:1.35em;line-height:1.2em;position:relative;z-index:1}
+.prov .card{background:var(--card);border-radius:0 0 1.2em 1.2em;margin-top:-.7em;padding:1.1em .8em .6em;display:grid;grid-template-columns:repeat(3,1fr);gap:.5em;height:10.6em}
+.leg{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.1}
+.leg .ph{width:6.9em;height:6.9em;margin-bottom:.2em}
+.leg .nom{font-size:.58em;margin-top:.1em;height:1.2em;display:flex;align-items:flex-end}
+.leg .ape{font-size:.78em;font-weight:500;text-transform:uppercase;white-space:nowrap}
+.leg .par{background:var(--azul2);color:#fff;font-size:.55em;font-weight:700;text-transform:uppercase;width:100%;margin-top:.35em;padding:.25em .2em;min-height:2.4em;display:flex;align-items:center;justify-content:center;line-height:1.05}
+/* pie */
+.foot{position:absolute;left:0;right:0;bottom:0;height:2.6em;background:var(--azul);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:0 4em;font-size:.62em;font-weight:700}
+/* impresión */
+@page{size:A4;margin:0}
+@media print{
+  html,body{background:none}
+  .page{margin:0;box-shadow:none}
+  body.a3 .page{width:297mm}
+}
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="head"><div class="logo"></div><h1>AUTORIDADES</h1></div>
+  <div class="auth" id="auth"></div>
+  <div class="grid" id="grid"></div>
+  <div class="foot"><span id="fecha"></span><span id="area"></span></div>
+</div>
+
+<script>
+/* =========================================================
+   DATOS  —  editá solo esta sección
+   Foto: fotos/<slug>.jpg  (slug = nombre+apellido sin tildes,
+   ej. "Victoria VILLARRUEL" -> fotos/victoria-villarruel.jpg)
+   Si no hay foto, se muestra la silueta.
+   ========================================================= */
+const CONFIG = {
+  titulo: "AUTORIDADES",
+  actualizado: "02/10/2026",
+  area: "DIRECCIÓN GENERAL DE COMUNICACIÓN INSTITUCIONAL",
+  fotos: "fotos/"
+};
+
+// [nombre, APELLIDO, cargo]
+const AUTORIDADES = [
+  [["Victoria","VILLARRUEL","Presidencia"]],
+  [["Bartolomé Esteban","ABDALA","Presidencia provisional"],
+   ["María Carolina","MOISÉS","Vicepresidencia"],
+   ["Carolina","LOSADA","Vicepresidencia primera"],
+   ["Alejandra María","VIGO","Vicepresidencia segunda"]],
+  [["Alejandro","FITZGERALD","Secretaría administrativa"],
+   ["Agustín","GIUSTINIAN","Secretaría parlamentaria"],
+   ["Lucas","CLARK","Prosecretaría administrativa"],
+   ["Dolores","MARTÍNEZ","Prosecretaría parlamentaria"],
+   ["Patricio Federico","FINOCHIETTO","Prosecretaría de coordinación operativa"]]
+];
+
+// Partidos (clave corta -> texto en el tag)
+const P = {
+  J:"JUSTICIALISTA", LLA:"LA LIBERTAD AVANZA", UCR:"UNIÓN CÍVICA RADICAL",
+  CF:"CONVICCIÓN FEDERAL", PRO:"FRENTE PRO", PU:"PROVINCIAS UNIDAS",
+  JSF:"JUSTICIA SOCIAL FEDERAL"
+};
+
+// Provincias en el orden en que se dibujan (izq→der, arriba→abajo)
+// [nombre, APELLIDO, partido(clave de P o texto libre)]; null = sin foto/nombre
+const PROVINCIAS = [
+ ["Buenos Aires",[["Eduardo Enrique","DE PEDRO","J"],["Juliana","DI TULLIO","J"],["Maximiliano","ABAD","UCR"]]],
+ ["Catamarca",[["Lucía Benigna","CORPACCI","J"],["Guillermo Eduardo","ANDRADA","CF"],["Flavio Sergio","FAMA","UCR"]]],
+ ["Chaco",[["Juan Cruz","GODOY","LLA"],["Silvana Lorena","SCHNEIDER","UCR"],["Jorge Milton","CAPITANICH","J"]]],
+ ["Chubut",[["Edith Elizabeth","TERENZI","DESPIERTA CHUBUT"],["Andrea Marcela","CRISTINA","PRO"],["Carlos Alberto","LINARES","J"]]],
+ ["Ciudad Autónoma de Buenos Aires",[["Patricia","BULLRICH","LLA"],["Agustín Aníbal","MONTEVERDE","LLA"],["Mariano","RECALDE","J"]]],
+ ["Córdoba",[["Carmen","ÁLVAREZ RIVERO","LLA"],["Luis Alfredo","JUEZ","LLA"],["Alejandra María","VIGO","PU"]]],
+ ["Corrientes",[["Mercedes Gabriela","VALENZUELA","UCR"],["Eduardo Alejandro","VISCHI","UCR"],["Carlos Mauricio","ESPÍNOLA","PU"]]],
+ ["Entre Ríos",[["Joaquín Alberto","BENEGAS LYNCH","LLA"],["Romina María","ALMEIDA","LLA"],["Adán Humberto","BAHL","J"]]],
+ ["Formosa",[["José Miguel Ángel","MAYANS","J"],["María Teresa Margarita","GONZÁLEZ","J"],["Francisco Manuel","PAOLTRONI","LLA"]]],
+ ["Jujuy",[["Ezequiel","ATAUCHE","LLA"],["Vilma Facunda","BEDIA","LLA"],["María Carolina","MOISÉS","CF"]]],
+ ["La Pampa",[["María Victoria","HUALA","PRO"],["Daniel Ricardo","KRONEBERGER","UCR"],["Daniel Pablo","BENSUSÁN","J"]]],
+ ["La Rioja",[["María Florencia","LÓPEZ","J"],["Jesús Fernando","REJAL","JSF"],["","","LLA"]]],
+ ["Mendoza",[["Mariana","JURI","UCR"],["Rodolfo Alejandro","SUÁREZ","UCR"],["Anabel","FERNÁNDEZ SAGASTI","J"]]],
+ ["Misiones",[["Carlos Omar","ARCE","MOVIMIENTO POR MISIONES"],["Sonia Elizabeth","ROJAS DECUT","MOVIMIENTO POR MISIONES"],["Enrique Martín","GOERLING LARA","PRO"]]],
+ ["Neuquén",[["Nadia Judith","MÁRQUEZ","LLA"],["Mario Pablo","CERVI","LLA"],["Julieta","CORROZA","LA NEUQUINIDAD"]]],
+ ["Río Negro",[["Martín Ignacio","SORIA","J"],["Ana Inés","MARKS","J"],["Enzo Paolo","FULLONE","LLA"]]],
+ ["Salta",[["María Emilia","OROZCO","LLA"],["Gonzalo","GUZMÁN CORAITA","LLA"],["Flavia Gabriela","ROYON","PRIMERO LOS SALTEÑOS"]]],
+ ["San Juan",[["Sergio Mauricio","UÑAC","J"],["María Celeste","GIMÉNEZ NAVARRO","J"],["Bruno Antonio","OLIVERA LUCERO","LLA"]]],
+ ["San Luis",[["Bartolomé Esteban","ABDALA","LLA"],["Ivanna Marcela","ARRASCAETA","LLA"],["Fernando Aldo","SALINO","JSF"]]],
+ ["Santa Cruz",[["José María","CARAMBIA","MOVERE SANTA CRUZ"],["Natalia Elena","GADANO","MOVERE SANTA CRUZ"],["Alicia Margarita","KIRCHNER","J"]]],
+ ["Santa Fe",[["Carolina","LOSADA","UCR"],["Eduardo Horacio","GALARETTO","UCR"],["Marcelo Néstor","LEWANDOWSKI","J"]]],
+ ["Santiago del Estero",[["Gerardo","ZAMORA","FRENTE CÍVICO POR SANTIAGO"],["Elia Esther del Carmen","MORENO","FRENTE CÍVICO POR SANTIAGO"],["José Emilio","NEDER","J"]]],
+ ["Tierra del Fuego",[["Agustín Pedro","COTO","LLA"],["María Belén","MONTE DE OCA","LLA"],["Cándida Cristina","LÓPEZ","J"]]],
+ ["Tucumán",[["Sandra Mariela","MENDOZA","CF"],["Juan Luis","MANZUR","J"],["Beatriz Luisa","AVILA","INDEPENDENCIA"]]]
+];
+
+/* ================= RENDER ================= */
+const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const foto = (n,a) => (n||a) ? `<img src="${CONFIG.fotos}${slug(n+" "+a)}.jpg" alt="" onerror="this.remove()">` : "";
+const cap = s => s.charAt(0)+s.slice(1).toLowerCase();
+
+document.querySelector(".head h1").textContent = CONFIG.titulo;
+document.getElementById("fecha").textContent = "ACTUALIZADO AL " + CONFIG.actualizado;
+document.getElementById("area").textContent = CONFIG.area;
+
+document.getElementById("auth").innerHTML = AUTORIDADES.map((fila,i)=>
+  `<div class="row ${i==0?"c":""}">` + fila.map(([n,a,r])=>
+    `<div class="p ${i==0?"big":""}"><div class="ph">${foto(n,a)}</div>
+     <div class="t"><div class="n">${n}<br><b>${a}</b></div><div class="r">${r}</div></div></div>`
+  ).join("") + `</div>`).join("");
+
+document.getElementById("grid").innerHTML = PROVINCIAS.map(([prov,legs])=>
+  `<div class="prov"><div class="tit">${prov}</div><div class="card">` +
+  legs.map(([n,a,p])=>
+    `<div class="leg"><div class="ph">${foto(n,a)}</div>
+     <div class="nom">${n}</div><div class="ape">${a}</div>
+     <div class="par">${P[p]||p}</div></div>`).join("") +
+  `</div></div>`).join("");
+</script>
+</body>
+</html>
