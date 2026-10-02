@@ -1,0 +1,7 @@
+{
+  "name": "desplegado",
+  "private": true,
+  "type": "module",
+  "scripts": { "a4": "node export.mjs a4", "a3": "node export.mjs a3" },
+  "dependencies": { "playwright": "^1.48.0" }
+}
