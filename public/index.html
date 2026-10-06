@@ -314,7 +314,7 @@ const PROVINCIAS = [
 /* ================= RENDER ================= */
 const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 /* Fotos: prueba cada fuente en orden y, en cada una, "apellido-primernombre.png"
-   (homónimos, ej. lopez-florencia.png) y después "apellido.png" (ej. villarruel.png).
+   (homónimos, ej. LOPEZ FLORENCIA.png) y después "APELLIDO.png" (ej. VILLARRUEL.png).
    Abierto con doble clic (file://) prueba primero ./fotos/ y después GitHub; online, al revés.
    Con ?fotos=local o ?fotos=URL usa solo esa. Si ninguna existe, muestra la silueta. */
 const BASES = (() => {
@@ -324,7 +324,13 @@ const BASES = (() => {
   return ["fotos/", "public/fotos/", norm(CONFIG.fotos)];   // mismo sitio primero, GitHub raw al final
 })();
 const esWeb = u => /^https?:/.test(u);
-const rutas = (n,a) => BASES.flatMap(b => [slug(a+" "+n.split(" ")[0]), slug(a)].map(x => b + x + ".png"));
+// Nombres de archivo aceptados (sin tildes; la Ñ se prueba con y sin tilde), todos con .png:
+//   ABAD · BENEGAS LYNCH   |   abad · benegas lynch   |   benegas-lynch   |   benegaslynch
+// y, para homónimos, "APELLIDO NOMBRE" primero (ej. lopez florencia.png, ABDALA BARTOLOME.png).
+const up = (t, keepN) => t.normalize("NFD").replace(/[\u0300-\u036f]/g,(c,i,str)=> keepN && c==="\u0303" && /n/i.test(str[i-1]) ? c : "").normalize("NFC").toUpperCase().trim();
+const formas = t => [t, t.toLowerCase(), t.toLowerCase().replace(/\s+/g,"-"), t.toLowerCase().replace(/\s+/g,"")];
+const nombres = (n,a) => [...new Set([true,false].flatMap(k => [up(a+" "+n.split(" ")[0],k), up(a,k)]).flatMap(formas))];
+const rutas = (n,a) => BASES.flatMap(b => nombres(n,a).map(x => b + encodeURIComponent(x) + ".png"));
 const foto = (n,a) => {
   if(!n && !a) return "";
   const r = rutas(n,a);
