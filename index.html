@@ -73,7 +73,7 @@ body{font-family:"Roboto","Helvetica Neue",Arial,sans-serif;padding-top:3.6rem;c
   <label>Formato <select id="fmt"><option value="a4">A4</option><option value="a3">A3</option></select></label>
   <button id="bPdf">Exportar PDF (vectorial)</button>
   <button id="bJpg">Exportar JPG 300 dpi</button>
-  <span id="estado">v7</span>
+  <span id="estado">v8</span>
 </div>
 <div class="page" id="page">
   <div class="head"><div class="logo"><svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 54.4 40.4">
@@ -313,44 +313,44 @@ const PROVINCIAS = [
 
 /* ================= RENDER ================= */
 const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-/* Fotos: prueba cada fuente en orden y, en cada una, "apellido-primernombre.png"
-   (homónimos, ej. LOPEZ FLORENCIA.png) y después "APELLIDO.png" (ej. VILLARRUEL.png).
-   Abierto con doble clic (file://) prueba primero ./fotos/ y después GitHub; online, al revés.
-   Con ?fotos=local o ?fotos=URL usa solo esa. Si ninguna existe, muestra la silueta. */
+/* FOTOS — una sola convención:  minúsculas, sin tildes, espacios -> guion, .png
+     apellido.png            ej. de-pedro.png, benegas-lynch.png, uñac -> unac.png
+   Si el apellido lo comparten PERSONAS DISTINTAS, se usa nombre-apellido:
+     maria-florencia-lopez.png, candida-cristina-lopez.png
+   Se averigua en qué carpeta están las fotos (una sola vez) y se pide UN archivo por persona. */
 const BASES = (() => {
   const q = new URLSearchParams(location.search).get("fotos");
   const norm = b => b === "local" ? "fotos/" : (b.endsWith("/") ? b : b + "/");
   if (q) return [norm(q)];
-  return ["fotos/", "public/fotos/", norm(CONFIG.fotos)];   // mismo sitio primero, GitHub raw al final
+  return ["fotos/", "public/fotos/", norm(CONFIG.fotos)];   // se usa la primera donde exista alguna foto
 })();
 const esWeb = u => /^https?:/.test(u);
-// Nombres de archivo aceptados (sin tildes; la Ñ se prueba con y sin tilde), todos con .png:
-//   ABAD · BENEGAS LYNCH   |   abad · benegas lynch   |   benegas-lynch   |   benegaslynch
-// y, para homónimos, "APELLIDO NOMBRE" primero (ej. lopez florencia.png, ABDALA BARTOLOME.png).
-const up = (t, keepN) => t.normalize("NFD").replace(/[\u0300-\u036f]/g,(c,i,str)=> keepN && c==="\u0303" && /n/i.test(str[i-1]) ? c : "").normalize("NFC").toUpperCase().trim();
-const formas = t => [t, t.toLowerCase(), t.toLowerCase().replace(/\s+/g,"-"), t.toLowerCase().replace(/\s+/g,"")];
-const nombres = (n,a) => [...new Set([true,false].flatMap(k => [up(a+" "+n.split(" ")[0],k), up(a,k)]).flatMap(formas))];
-const rutas = (n,a) => BASES.flatMap(b => nombres(n,a).map(x => b + encodeURIComponent(x) + ".png"));
-const foto = (n,a) => {
-  if(!n && !a) return "";
-  const r = rutas(n,a);
-  return `<img data-r='${JSON.stringify(r)}' data-i="0"${esWeb(r[0]) ? ' crossorigin="anonymous"' : ''} alt="" onload="fotoOk()" onerror="fotoFallback(this)" src="${r[0]}">`;
-};
-function fotoFallback(img){
-  const r = JSON.parse(img.dataset.r), i = +img.dataset.i + 1;
-  if(i < r.length){ img.dataset.i = i; img.crossOrigin = esWeb(r[i]) ? "anonymous" : null; img.src = r[i]; }
-  else { img.remove(); FALTAN.push(r[0]); resumen(); }
-}
-let OK = 0; const FALTAN = [];
+const DUP = (() => {                                        // apellidos compartidos por personas distintas
+  const m = {}; [...AUTORIDADES.flat(), ...PROVINCIAS.flatMap(p => p[1])].forEach(([n,a]) => { if(a) (m[a] ||= new Set()).add(n); });
+  return new Set(Object.keys(m).filter(a => m[a].size > 1));
+})();
+const archivo = (n,a) => slug(DUP.has(a) ? n+" "+a : a) + ".png";
+let BASE = BASES[0], OK = 0; const FALTAN = [];
+const foto = (n,a) => (n||a) ? `<img${esWeb(BASE) ? ' crossorigin="anonymous"' : ''} alt="" onload="fotoOk()" onerror="fotoFalta(this)" src="${BASE}${archivo(n,a)}">` : "";
 function fotoOk(){ OK++; resumen(); }
+function fotoFalta(img){ FALTAN.push(img.getAttribute("src")); img.remove(); resumen(); }
 function resumen(){
   const e = document.getElementById("estado"); if(!e) return;
-  e.textContent = `v7 · fotos: ${OK} ok, ${FALTAN.length} sin encontrar`;
+  e.textContent = `v8 · fotos: ${OK} ok, ${FALTAN.length} sin encontrar`;
   e.title = FALTAN.slice(0,5).map(u => new URL(u, location.href).href).join("\n");
-  if(FALTAN.length) console.warn("Sin foto (1er intento):", FALTAN.map(u => new URL(u, location.href).href));
+  if(FALTAN.length) console.warn("Sin foto:", FALTAN.map(u => new URL(u, location.href).href));
+}
+async function elegirBase(){                                // prueba hasta 3 fotos por carpeta, en paralelo
+  const muestra = PROVINCIAS.flatMap(p => p[1]).filter(l => l[1]).slice(0,3).map(([n,a]) => archivo(n,a));
+  for(const b of BASES){
+    const hay = await Promise.all(muestra.map(f => new Promise(r => { const i = new Image(); i.onload = () => r(true); i.onerror = () => r(false); i.src = b + f; })));
+    if(hay.some(Boolean)) return b;
+  }
+  return BASES[0];
 }
 const cap = s => s.charAt(0)+s.slice(1).toLowerCase();
 
+function render(){
 document.querySelector(".head h1").textContent = CONFIG.titulo;
 document.getElementById("fecha").textContent = "ACTUALIZADO AL " + CONFIG.actualizado;
 document.getElementById("area").textContent = CONFIG.area;
@@ -368,6 +368,8 @@ document.getElementById("grid").innerHTML = PROVINCIAS.map(([prov,legs])=>
      <div class="nom">${n}</div><div class="ape">${a}</div>
      <div class="par">${P[p]||p}</div></div>`).join("") +
   `</div></div>`).join("");
+}
+window.RENDER = (async () => { BASE = await elegirBase(); render(); })();
 
 /* ================= EXPORTAR ================= */
 const $ = id => document.getElementById(id), estado = t => $("estado").textContent = t || "";
@@ -378,8 +380,8 @@ function setFormat(f){
 setFormat((new URLSearchParams(location.search).get("fmt")||"a4").toLowerCase());
 $("fmt").onchange = e => setFormat(e.target.value);
 
-async function listo(){            // espera fuentes e imágenes
-  await document.fonts.ready;
+async function listo(){            // espera render, fuentes e imágenes
+  await window.RENDER; await document.fonts.ready;
   await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
 }
 $("bPdf").onclick = async () => {
