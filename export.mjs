@@ -24,6 +24,7 @@ const page = await (await browser.newContext({
 })).newPage();
 await page.goto(url, { waitUntil: "networkidle" });
 await page.evaluate(async () => {
+  await window.RENDER;
   await document.fonts.ready;
   await Promise.all([...document.images].map(i => i.complete || new Promise(r => (i.onload = i.onerror = r))));
 });
