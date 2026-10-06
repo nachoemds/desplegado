@@ -73,7 +73,7 @@ body{font-family:"Roboto","Helvetica Neue",Arial,sans-serif;padding-top:3.6rem;c
   <label>Formato <select id="fmt"><option value="a4">A4</option><option value="a3">A3</option></select></label>
   <button id="bPdf">Exportar PDF (vectorial)</button>
   <button id="bJpg">Exportar JPG 300 dpi</button>
-  <span id="estado"></span>
+  <span id="estado">v7</span>
 </div>
 <div class="page" id="page">
   <div class="head"><div class="logo"><svg id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 54.4 40.4">
@@ -243,8 +243,8 @@ body{font-family:"Roboto","Helvetica Neue",Arial,sans-serif;padding-top:3.6rem;c
 <script>
 /* =========================================================
    DATOS  —  editá solo esta sección
-   Foto: fotos/<slug>.jpg  (slug = nombre+apellido sin tildes,
-   ej. "Victoria VILLARRUEL" -> fotos/victoria-villarruel.jpg)
+   Fotos: archivos .png con el APELLIDO (ej. VILLARRUEL.png, benegas lynch.png).
+   Detalle de nombres aceptados más abajo, junto a "const rutas".
    Si no hay foto, se muestra la silueta.
    ========================================================= */
 const CONFIG = {
@@ -334,12 +334,20 @@ const rutas = (n,a) => BASES.flatMap(b => nombres(n,a).map(x => b + encodeURICom
 const foto = (n,a) => {
   if(!n && !a) return "";
   const r = rutas(n,a);
-  return `<img data-r='${JSON.stringify(r)}' data-i="0"${esWeb(r[0]) ? ' crossorigin="anonymous"' : ''} alt="" onerror="fotoFallback(this)" src="${r[0]}">`;
+  return `<img data-r='${JSON.stringify(r)}' data-i="0"${esWeb(r[0]) ? ' crossorigin="anonymous"' : ''} alt="" onload="fotoOk()" onerror="fotoFallback(this)" src="${r[0]}">`;
 };
 function fotoFallback(img){
   const r = JSON.parse(img.dataset.r), i = +img.dataset.i + 1;
   if(i < r.length){ img.dataset.i = i; img.crossOrigin = esWeb(r[i]) ? "anonymous" : null; img.src = r[i]; }
-  else img.remove();
+  else { img.remove(); FALTAN.push(r[0]); resumen(); }
+}
+let OK = 0; const FALTAN = [];
+function fotoOk(){ OK++; resumen(); }
+function resumen(){
+  const e = document.getElementById("estado"); if(!e) return;
+  e.textContent = `v7 · fotos: ${OK} ok, ${FALTAN.length} sin encontrar`;
+  e.title = FALTAN.slice(0,5).map(u => new URL(u, location.href).href).join("\n");
+  if(FALTAN.length) console.warn("Sin foto (1er intento):", FALTAN.map(u => new URL(u, location.href).href));
 }
 const cap = s => s.charAt(0)+s.slice(1).toLowerCase();
 
